@@ -547,43 +547,21 @@ drop life_60_female
 
 ********************************************************************************
 *************************** Generating Ebola prevalence rate *******************
+********************************************************************************
+
 drop prev_*
 gen prev_ebola_cases = ebola_cases / pop_total
-gen prev_ebola_death = ebola_deaths / pop_total
 
 replace ebola_cases = 0 if strpos(countryname, "Equatorial") == 1
-replace ebola_deaths = 0 if strpos(countryname, "Equatorial") == 1
 replace ebola_articles = 0 if strpos(countryname, "Equatorial") == 1
 replace ebola_cases = 0 if strpos(counterpartcountryname, "Equatorial" ) == 1 & ///
 
-sort id time
-drop avg
-egen avg = mean(prev_ebola_cases) if time == 15 & prev_ebola_cases != 0, by(countryname)
-recode avg .=0
-gen log_prev_avg = log(avg)
-recode log_prev_avg .=0
-
-sort countryname time
-drop *pre_avg_*
-
-gen pre_avg_1 = avg[_n+1]
-gen pre_avg_2 = avg[_n+2]
-gen pre_avg_3 = avg[_n+3]
-gen pre_avg_4 = avg[_n+4]
-gen pre_avg_5 = avg[_n+5]
-gen pre_avg_6 = avg[_n+6]
-gen pre_avg_7 = avg[_n+7] // Starting here things become an issue!
-gen pre_avg_8 = avg[_n+8]
-gen pre_avg_9 = avg[_n+9]
-gen pre_avg_10 = avg[_n+10]
-gen pre_avg_11 = avg[_n+11] // Dropped b/c of collinearity
-gen pre_avg_12 = avg[_n+12] // --"--
-gen pre_avg_13 = avg[_n+13] // --"--
-
 save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta", replace
+
 
 ********************************************************************************
 **************************** Adding some forgotten controls ********************
+********************************************************************************
 
 import excel "C:\Users\mariu\Downloads\Data_Extract_From_World_Development_Indicators (4).xlsx", sheet("Data") firstrow clear
 
@@ -773,7 +751,9 @@ recode log_ebola_articles .=0
 sort countryname time
 
 
+
 *** a variable containing prev new cases
+
 by id: gen prev_ebola_new_cases = prev_ebola_cases - prev_ebola_cases[_n-1]
 recode prev_ebola_new_cases .=0 
 
@@ -782,7 +762,6 @@ recode new_avg .=0
 
 gen new_post_avg_1 = new_avg[_n-1]
 gen new_post_avg_2 = new_avg[_n-2]
-gen new_post_avg_3 = new_avg[_n-3]
 gen new_pre_avg_1 = new_avg[_n+1]
 gen new_pre_avg_2 = new_avg[_n+2]
 gen new_pre_avg_3 = new_avg[_n+3]
@@ -796,6 +775,22 @@ gen new_pre_avg_10 = new_avg[_n+10]
 gen new_pre_avg_11 = new_avg[_n+11] // Dropped b/c of collinearity
 gen new_pre_avg_12 = new_avg[_n+12] // --"--
 gen new_pre_avg_13 = new_avg[_n+13]
+gen new_pre_avg_14 = new_avg[_n+14]
+gen new_pre_avg_g10 = new_avg[_n+10] + new_avg[_n + 11] + new_avg[_n + 12] ///
+ + new_avg[_n + 13] + new_avg[_n+14]
+recode new_pre_avg_g10 .=0
+
+foreach j in 13 12 11 10 9 8 7 6 5 4 3 2 1{
+	foreach i in new_pre_avg_`j'{
+		recode `i' .=0
+}
+}
+
+foreach j in 2 1{
+	foreach i in new_post_avg_`j'{
+		recode `i' .=0
+}
+}
 
 
 by id: gen percent_exports = exports / gdp
@@ -809,21 +804,64 @@ gen net_fdi_mil = net_fdi / 1000000
 
 xtset id time
 
-xtreg log_adult_mort pre_avg_13 pre_avg_12 pre_avg_11 pre_avg_10 pre_avg_9 pre_avg_8 pre_avg_7 pre_avg_6 ///
-pre_avg_5 pre_avg_4 pre_avg_3 pre_avg_2 avg post_avg_1 post_avg_2 time, fe vce(cluster countryname)
-est store Event_Study
+** a)
 
-xtreg log_adult_mort new_pre_avg_10 ///
+xtreg log_adult_mort new_pre_avg_g10 ///
 new_pre_avg_9 new_pre_avg_8 new_pre_avg_7 new_pre_avg_6 new_pre_avg_5 new_pre_avg_4 ///
-new_pre_avg_3 new_pre_avg_2 new_pre_avg_1 new_avg new_post_avg_1 new_post_avg_2 ///
+new_pre_avg_3 new_pre_avg_2 new_avg new_post_avg_1 new_post_avg_2 ///
 time, fe vce(cluster countryname)
 est store Event_Study
+test new_pre_avg_*
+
+
+** b) Robustness 
+xtreg log_adult_mort new_pre_avg_14 new_pre_avg_13 new_pre_avg_12 new_pre_avg_11 new_pre_avg_10 ///
+new_pre_avg_9 new_pre_avg_8 new_pre_avg_7 new_pre_avg_6 new_pre_avg_5 new_pre_avg_4 ///
+new_pre_avg_3 new_pre_avg_2 new_avg new_post_avg_1 new_post_avg_2 ///
+time, fe vce(cluster countryname)
+est store Event_Study_2
 
 outreg2 [Event_Study] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Event_results", ///
 tex(pretty) ctitle("Event Study") lab(proper) nocons seeout replace
 
 coefplot (Event_Study), xline(0) horizontal drop(_cons time) xtitle(Coefficient) ytitle(Years to outbreak) title(Event Study) legend(off) replace
+coefplot (Event_Study_2), xline(0) horizontal drop(_cons time) xtitle(Coefficient) ytitle(Years to outbreak) title(Event Study Robustness) legend(off) replace
 
+
+*** c)
+***     Check for pre-trends in the output variable
+***		If there are, describe
+
+use "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta", clear
+
+** c.1) Averages, Treatment - Control
+
+gen treatment_id = 1 if countryname == "Sierra-Leone" | countryname == "Liberia" | countryname == "Guinea"
+recode treatment_id .=0
+drop if time <= 4
+egen mean_control = mean(log_adult_mort) if treatment_id == 0, by(time)
+gen mean_c_st = mean_control / 5.917859
+egen mean_treat = mean(log_adult_mort) if treatment_id == 1, by(time)
+gen mean_t_st = mean_treat / 5.917859
+keep if id_string == "10_1" | id_string == "17_140" 
+gen trend_2 = 1 - 0.005*_n + 0.004 if id_string == "10_1"
+gen trend_3 = 1 - 0.005*_n + 0.05 if id_string == "17_140"
+
+twoway line mean_c_st mean_t_st time, xline(14)
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Averages_pre_trends.png", as(png) replace
+
+twoway line mean_c_st mean_t_st trend_3 time, xline(14)
+twoway line mean_t_st trend_3  time, xline(14)
+
+gen mean_new = mean_t_st - trend_3
+ttest mean_new = 0
+twoway line mean_new time, xline(14)
+
+drop if time <= 4
+egen mean_mort = mean(log_adult_mort), by(time)
+gen mean_mort_st = mean_mort / 5.912935
+drop if  id_string != "10_1"
+twoway line mean_mort_st trend_2 time, xline(14)
 
 ********************************************************************************
 ***************** All in all, the event study seems fine ***********************
@@ -854,9 +892,10 @@ save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta", re
 xtset id time
 gen log_ebola_articles = log(ebola_articles)
 recode log_ebola_articles .=0 // log(0) not defined
+gen prev_ebola_new_cases_percent = prev_ebola_new_cases * 100
 
 *** a) 
-xtreg log_adult_mort prev_ebola_new_cases time, fe vce(cluster countryname)
+xtreg log_adult_mort prev_ebola_new_cases_percent time, fe vce(cluster countryname)
 est store Baseline_1
 
 *** b)
@@ -880,7 +919,7 @@ xtreg log_adult_mort log_ebola_articles percent_urban log_health percent_interne
 log_gdp_p_c gdp_p_c_growth log_fatalities time, fe vce(cluster countryname)
 est store Control_1
 
-xtreg log_adult_mort prev_ebola_new_cases percent_urban log_health percent_internet ///
+xtreg log_adult_mort prev_ebola_new_cases_percent percent_urban log_health percent_internet ///
 log_gdp_p_c gdp_p_c_growth log_fatalities time, fe vce(cluster countryname)
 est store Control_2
 
@@ -890,7 +929,7 @@ log_gdp_p_c gdp_p_c_growth log_fatalities time prev_HIV tuberculosis_cases log_a
 malaria_p1000, fe vce(cluster countryname)
 est store Control_3
 
-xtreg log_adult_mort prev_ebola_new_cases percent_urban log_health percent_internet ///
+xtreg log_adult_mort prev_ebola_new_cases_percent percent_urban log_health percent_internet ///
 log_gdp_p_c gdp_p_c_growth log_fatalities time prev_HIV tuberculosis_cases log_anemia ///
 malaria_p1000, fe vce(cluster countryname)
 est store Control_4
@@ -901,7 +940,7 @@ log_gdp_p_c gdp_p_c_growth log_fatalities time prev_HIV tuberculosis_cases log_a
 malaria_p1000 CVD_cancer_diab diarrhea_treat_percent, fe vce(cluster countryname)
 est store Control_5
 
-xtreg log_adult_mort prev_ebola_new_cases percent_urban log_health percent_internet ///
+xtreg log_adult_mort prev_ebola_new_cases_percent percent_urban log_health percent_internet ///
 log_gdp_p_c gdp_p_c_growth log_fatalities time prev_HIV tuberculosis_cases log_anemia ///
 malaria_p1000 CVD_cancer_diab diarrhea_treat_percent, fe vce(cluster countryname)
 est store Control_6
@@ -909,6 +948,8 @@ est store Control_6
 outreg2 [Control_2 Control_1 Control_4 Control_3 Control_6 Control_5] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Control_results", ///
 tex(pretty) ctitle("Control") addtext(State and year FE, Yes) adds(F-test, e(F)) lab(proper) nocons seeout replace
 
+
+zipfile C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta, saving(C:\Users\mariu\Documents\Master_Thesis\Master_thesis\data_zip, replace)
 
 ********************************************************************************
 **************************** Impulse response function *************************
@@ -924,30 +965,38 @@ gen log_mort_3 = log_mort_1[_n-2]
 
 ** I)
 foreach i in 1 2 3{
-	qui: xtreg log_mort_`i' prev_ebola_new_cases time, fe vce(cluster countryname)
+	qui: xtreg log_mort_`i' prev_ebola_new_cases_percent time, fe vce(cluster countryname)
+	est store IRF_`i'
 	parmest, label list(parm label estimate min* max* p) saving(results_`i', replace)
 }
 append using results_1 results_2 results_3
-keep if parm == "prev_ebola_new_cases"
+keep if parm == "prev_ebola_new_cases_percent"
 save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\IRF.dta", replace
 encode parm, generate(parm2)
 drop parm
 rename parm2 parm
 gen time_irf = _n
 label variable estimate "regression coefficient"
-gen estimate_2 = (estimate / 97.159538)
+gen estimate_2 = (estimate / .97159536)
 label variable min95 "lower 95% CI "
-gen min95_2 = (min95 / 97.159538)
+gen min95_2 = (min95 / .97159536)
 label variable max95 " upper 95% CI"
-gen max95_2 = (max95 / 97.159538)
+gen max95_2 = (max95 / .97159536)
 
-twoway (line estimate_2 time_irf, mcolor(red) msymbol(square) msize(small)) ///
-(rcap min95_2 max95_2 time_irf, lcolor(black)) , ///
-xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+twoway (rarea min95_2 max95_2 time_irf, color(gs14)) ///
+(line estimate_2 time_irf, mcolor(red) msymbol(square) msize(small)) ///
+, xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
 
 graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_no_controls_prev_cases.png", as(png) replace
 
+outreg2 [IRF_1 IRF_2 IRF_3 ] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\IRF", ///
+tex(pretty) ctitle("Control") lab(proper) nocons seeout replace
+
 ** II)
+
+use "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta", clear
+rename log_adult_mort log_mort_1
+
 foreach i in 1 2 3{
 	qui: xtreg log_mort_`i' log_ebola_articles time, fe vce(cluster countryname)
 	parmest, label list(parm label estimate min* max* p) saving(results_`i', replace)
@@ -960,19 +1009,84 @@ drop parm
 rename parm2 parm
 gen time_irf = _n
 label variable estimate "regression coefficient"
-gen estimate_2 = (estimate / 97.159538)
+gen estimate_2 = (estimate / .0202603)
 label variable min95 "lower 95% CI "
-gen min95_2 = (min95 / 97.159538)
+gen min95_2 = (min95 / .0202603)
 label variable max95 " upper 95% CI"
-gen max95_2 = (max95 / 97.159538)
+gen max95_2 = (max95 / .0202603)
 
-twoway (line estimate_2 time_irf, mcolor(red) msymbol(square) msize(small)) ///
-(rcap min95_2 max95_2 time_irf, lcolor(black)) , ///
-xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+twoway (rarea min95_2 max95_2 time_irf, color(gs14)) ///
+(line estimate_2 time_irf, mcolor(red) msymbol(square) msize(small)) ///
+, xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
 
 graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_no_controls_ebola_articles.png", as(png) replace
 
+********************************************************************************
 
+** b) with controls
+
+** I)
+
+use "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta", replace
+rename log_adult_mort log_mort_1
+
+foreach i in 1 2 3{
+	qui: xtreg log_mort_`i' prev_ebola_new_cases_percent percent_urban log_health percent_internet ///
+	log_gdp_p_c gdp_p_c_growth log_fatalities time prev_HIV tuberculosis_cases log_anemia ///
+	malaria_p1000, fe vce(cluster countryname)
+	parmest, label list(parm label estimate min* max* p) saving(results_`i', replace)
+}
+append using results_1 results_2 results_3
+keep if parm == "prev_ebola_new_cases_percent"
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\IRF_4.dta", replace
+encode parm, generate(parm2)
+drop parm
+rename parm2 parm
+gen time_irf = _n
+label variable estimate "regression coefficient"
+gen estimate_2 = (estimate / 1.1495606)
+label variable min95 "lower 95% CI "
+gen min95_2 = (min95 / 1.1495606)
+label variable max95 " upper 95% CI"
+gen max95_2 = (max95 / 1.1495606)
+
+twoway (rarea min95_2 max95_2 time_irf, color(gs14)) ///
+(line estimate_2 time_irf, mcolor(red) msymbol(square) msize(small)) ///
+, xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_controls_prev_cases.png", as(png) replace
+
+
+** II )
+
+use "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta", replace
+rename log_adult_mort log_mort_1
+
+foreach i in 1 2 3{
+	qui: xtreg log_mort_`i' log_ebola_articles percent_urban log_health percent_internet ///
+	log_gdp_p_c gdp_p_c_growth log_fatalities time prev_HIV tuberculosis_cases log_anemia ///
+	malaria_p1000, fe vce(cluster countryname)
+	parmest, label list(parm label estimate min* max* p) saving(results_`i', replace)
+}
+append using results_1 results_2 results_3
+keep if parm == "log_ebola_articles"
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\IRF_3.dta", replace
+encode parm, generate(parm2)
+drop parm
+rename parm2 parm
+gen time_irf = _n
+label variable estimate "regression coefficient"
+gen estimate_2 = (estimate / .01467932)
+label variable min95 "lower 95% CI "
+gen min95_2 = (min95 / .01467932)
+label variable max95 " upper 95% CI"
+gen max95_2 = (max95 / .01467932)
+
+twoway (rarea min95_2 max95_2 time_irf, color(gs14)) ///
+(line estimate_2 time_irf, mcolor(red) msymbol(square) msize(small)) ///
+, xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_controls_articles.png", as(png) replace
 
 ********************************************************************************
 ************************** Wild clustered bootstrapping ************************
@@ -984,20 +1098,466 @@ graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\I
 ********************************************************************************
 
 use "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta", replace
-
-rename log_mort_1 log_adult_mort
+xtset id time
 set seed 12345
 
+
 ** a)
-xtreg log_adult_mort prev_ebola_new_cases time, fe vce(cluster countryname)
-boottest prev_ebola_new_cases, reps(999) // Unrestricted
-boottest prev_ebola_new_cases, reps(999) nonull // Restricted
-boottest prev_ebola_new_cases, reps(999) bootcluster(id)
-boottest prev_ebola_new_cases, reps(999) nonull bootcluster(id)
+xtreg log_adult_mort prev_ebola_new_cases_percent time, fe vce(cluster countryname)
+boottest prev_ebola_new_cases, reps(9999) // Restricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Prev_no_controls_restricted_wild_bootstrap.png", as(png) replace
+boottest prev_ebola_new_cases, reps(2499) nonull // Unrestricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Prev_no_controls_unresticted_wild_bootstrap.png", as(png) replace
+
+boottest prev_ebola_new_cases, reps(2499) bootcluster(id) // Restricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Prev_no_controls_unrestricted_subclusters.png", as(png) replace
+boottest prev_ebola_new_cases, reps(2499) nonull bootcluster(id) // Unrestricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Prev_no_controls_restricted_subclusters.png", as(png) replace
+
 
 ** b)
 xtreg log_adult_mort log_ebola_articles time, fe vce(cluster countryname)
-boottest log_ebola_articles, reps(999)
-boottest log_ebola_articles, reps(999) nonull
-boottest log_ebola_articles, reps(999) bootcluster(id)
-boottest log_ebola_articles, reps(999) nonull bootcluster(id)
+boottest log_ebola_articles, reps(2999) // Restricted
+boottest log_ebola_articles, reps(2999) nonull // Unrestricted
+boottest log_ebola_articles, reps(2999) bootcluster(id)
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Articles_restricted_subcluster.png", as(png) replace
+boottest log_ebola_articles, reps(2999) nonull bootcluster(id)
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Articles_unrestricted_subcluster.png", as(png) replace
+
+
+** c)
+xtreg log_adult_mort prev_ebola_new_cases_percent percent_urban log_health percent_internet ///
+log_gdp_p_c gdp_p_c_growth log_fatalities time prev_HIV tuberculosis_cases log_anemia ///
+malaria_p1000, fe vce(cluster countryname)
+
+boottest prev_ebola_new_cases, reps(1499) // Restricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Controls_prevalence_restricted_country.png", as(png) replace
+
+boottest prev_ebola_new_cases, reps(1499) nonull // Unrestricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Controls_prevalence_unrestricted_country.png", as(png) replace
+
+boottest prev_ebola_new_cases, reps(2999) bootcluster(id) // Restricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Controls_prevalence_restricted_subcluster.png", as(png) replace
+
+boottest prev_ebola_new_cases, reps(1999) nonull bootcluster(id) // Unrestricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\Controls_prevalence_unrestricted_subcluster.png", as(png) replace
+
+
+** d)
+xtreg log_adult_mort log_ebola_articles percent_urban log_health percent_internet ///
+log_gdp_p_c gdp_p_c_growth log_fatalities time prev_HIV tuberculosis_cases log_anemia ///
+malaria_p1000, fe vce(cluster countryname)
+
+boottest log_ebola_articles, reps(1499) // Restricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\controls_articles_restricted_country.png",as(png) replace
+
+boottest log_ebola_articles, reps(1499) nonull // Unrestricted
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\controls_articles_unrestricted_country.png", as(png) replace
+
+boottest log_ebola_articles, reps(1499) bootcluster(id)
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\controls_articles_restricted_subcluster.png", as(png) replace
+
+boottest log_ebola_articles, reps(1499) nonull bootcluster(id)
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\controls_articles_unrestricted_subcluster.png", as(png) replace
+
+
+********************************************************************************
+*************************** Balanced Clusters ? ********************************
+****** Issue with unequal clusters following MacKinnon and Webb (2017 b) *******
+********************************************************************************
+
+sforeach i of numlist 1/39{
+egen N_`i' = count(time) if country_no == `i'
+}
+
+foreach i of numlist 1/39{
+gen perc_N_`i' = (N_`i' / 127296) * 100
+}
+
+sutex N_* perc_N_*, lab nobs key(descstat) dig(2) file(Balance.tex) title("Balance") replace
+
+
+egen N_treat = count(country_no) if country_no == 16| country_no == 20| country_no == 30, by (country_no)
+egen N_control = count(country_no) if country_no != 16| country_no != 20| country_no != 30 | country_no != 33, by (country_no)
+
+sum N_treat N_control
+
+********************************************************************************
+*************************** Second Stage ***************************************
+********************************************************************************
+******************** Without any control variables first ***********************
+********************************************************************************
+
+gen log_exp = log(exports)
+gen log_imp = log(imports)
+gen tb_in_mil = trade_balance / 1000000
+
+// Starting with exports
+xtivreg log_exp (log_adult_mort = prev_ebola_new_cases time), fe vce(cluster countryname) first
+est store exp_1
+xtivreg log_exp (log_adult_mort = log_ebola_articles time), fe vce(cluster countryname) first
+est store exp_2
+
+xtivreg percent_exports (log_adult_mort = prev_ebola_new_cases time) log_gdp_p_c, fe vce(cluster countryname) first
+est store exp_rob_1
+xtivreg percent_exports (log_adult_mort = log_ebola_articles time) log_gdp_p_c, fe vce(cluster countryname) first
+est store exp_rob_2
+
+// Imports 
+xtivreg log_imp (log_adult_mort = prev_ebola_new_cases time), fe vce(cluster countryname) first
+est store imp_1
+xtivreg log_imp (log_adult_mort = log_ebola_articles time), fe vce(cluster countryname) first
+est store imp_2
+
+xtivreg percent_imports (log_adult_mort = prev_ebola_new_cases time) log_gdp_p_c, fe vce(cluster countryname) first
+est store imp_rob_1
+xtivreg percent_imports (log_adult_mort = log_ebola_articles time) log_gdp_p_c, fe vce(cluster countryname) first
+est store imp_rob_2
+
+// trade balance
+xtivreg tb_in_mil (log_adult_mort = prev_ebola_new_cases time), fe vce(cluster countryname) first
+est store tb_1
+xtivreg tb_in_mil (log_adult_mort = log_ebola_articles time), fe vce(cluster countryname) first
+est store tb_2
+
+xtivreg percent_trade_balance (log_adult_mort = prev_ebola_new_cases time) log_gdp_p_c, fe vce(cluster countryname) first
+est store tb_rob_1
+xtivreg percent_trade_balance (log_adult_mort = log_ebola_articles time) log_gdp_p_c, fe vce(cluster countryname) first
+est store tb_rob_2
+
+
+// Collect all baseline results
+outreg2 [exp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Exports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout replace
+outreg2 [exp_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(Exports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [imp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Imports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [imp_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(Imports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [tb_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Trade Balance) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [tb_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(Trade Balance) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+
+xtivreg log_gdp_p_c (log_adult_mort = prev_ebola_new_cases time), fe vce(cluster countryname) first
+est store gdp_1
+xtivreg log_gdp_p_c (log_adult_mort = log_ebola_articles time), fe vce(cluster countryname) first
+est store gdp_2
+
+// Collect baseline robustness
+outreg2 [exp_rob_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline_rob", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Exp) adds(F-stat first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout replace
+outreg2 [exp_rob_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline_rob", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(Exp) adds(F-stat first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [imp_rob_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline_rob", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Imp) adds(F-stat first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [imp_rob_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline_rob", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(Imp) adds(F-stat first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [tb_rob_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline_rob", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(TB) adds(F-stat first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [tb_rob_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline_rob", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(TB) adds(F-stat first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [gdp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline_rob", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(GDP p.c.) adds(F-stat first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [gdp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_baseline_rob", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(GDP p.c.) adds(F-stat first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+
+********************************************************************************
+*********************** Now: Add controls **************************************
+********************************************************************************
+
+// Add capital 
+
+import excel "C:\Users\mariu\Downloads\Capital Data.xlsx", sheet("Data") firstrow clear
+rename CountryName countryname
+drop if  countryname == ""
+replace countryname = "CÃ´te d'Ivoire" if strpos(countryname, "Cote d'Ivoire") != 0
+replace countryname = "Congo" if strpos(countryname, "Congo, Rep.") != 0 & strpos(countryname, "Dem.") == 0
+replace countryname = "Democratic Republic of the Congo" if strpos(countryname, "Congo, Dem. Rep.") != 0
+replace countryname = "Gambia" if strpos(countryname, "Gambia, The") != 0
+encode Time, gen(year)
+sort countryname year
+by countryname: gen time = _n
+rename GrosscapitalformationofGD gross_capital_gdp
+rename Grosscapitalformationconstan gross_capital
+
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Capital_Data", replace
+
+merge 1:m countryname time using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta"
+drop if _merge != 3
+drop _merge
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged", replace
+
+gen capital = real(gross_capital)
+gen log_cap = log(capital)
+gen lag_lcap = log_cap[_n + 1]
+
+gen lag_pop = pop_total[_n+1]
+gen log_pop = log(lag_pop)
+
+gen log_exp = log(exports)
+gen log_imp = log(imports)
+gen tb_in_mil = trade_balance/1000000
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged", replace
+
+xtset id year
+
+********************************************************************************
+**************************** Theory Controls ***********************************
+********************************************************************************
+
+// Starting with exports
+xtivreg2 log_exp (log_adult_mort = prev_ebola_new_cases time) log_pop lag_lcap tariff, fe cluster(countryname) first
+est store cont_exp_1
+xtivreg2 log_exp (log_adult_mort = log_ebola_articles time) log_pop lag_lcap tariff, fe cluster(countryname) first
+est store cont_exp_2
+
+// Imports next
+xtivreg2 log_imp (log_adult_mort = prev_ebola_new_cases time) log_pop lag_lcap tariff, fe cluster(countryname) first
+est store cont_imp_1
+xtivreg2 log_imp (log_adult_mort = log_ebola_articles time) log_pop lag_lcap tariff, fe cluster(countryname) first
+est store cont_imp_2
+
+// Trade Balance
+xtivreg2 tb_in_mil (log_adult_mort = prev_ebola_new_cases time) log_pop lag_lcap tariff, fe cluster(countryname) first
+est store cont_tb_1
+xtivreg2 tb_in_mil (log_adult_mort = log_ebola_articles time) log_pop lag_lcap tariff, fe cluster(countryname) first
+est store cont_tb_2
+
+
+outreg2 [cont_exp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Exports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout replace
+outreg2 [cont_exp_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(Exports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [cont_imp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Imports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [cont_imp_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(Imports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [cont_tb_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Trade Balance) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [cont_tb_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(Trade Balance) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+
+
+********************************************************************************
+*************************** Combine controls ***********************************
+********************************************************************************
+
+xtivreg log_exp (log_adult_mort = prev_ebola_new_cases prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+est store all_exp_1
+xtivreg percent_exports (log_adult_mort = log_ebola_articles prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+est store cont_exp_2
+
+// Imports next
+xtivreg log_imp (log_adult_mort = prev_ebola_new_cases prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+est store all_imp_1
+xtivreg percent_imports (log_adult_mort = prev_ebola_new_cases prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+est store cont_imp_2
+
+// Trade Balance
+xtivreg tb_in_mil (log_adult_mort = prev_ebola_new_cases prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+est store all_tb_1
+xtivreg tb_in_mil (log_adult_mort = log_ebola_articles time) log_pop lag_lcap tariff, fe cluster(countryname) first
+est store cont_tb_2
+
+outreg2 [all_exp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Exports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout replace
+outreg2 [all_imp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Imports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [all_tb_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Trade Balance) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+
+
+
+
+********************************************************************************
+***************** Impulse repsonse functions - Second stage ********************
+********************************************************************************
+
+use "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged", clear
+
+foreach i in imp exp{
+	rename log_`i' log_`i'_1
+	gen log_`i'_2 = log_`i'_1[_n-1]
+	gen log_`i'_3 = log_`i'_1[_n-2]
+}
+
+gen tb_in_mil = trade_balance / 1000000
+rename tb_in_mil tb_in_mil_1
+gen tb_in_mil_2 = tb_in_mil_1[_n-1]
+gen tb_in_mil_3 = tb_in_mil_1[_n-2]
+
+
+// IRF of IMP and EXP
+
+foreach j in imp exp{
+	foreach i in 1 2 3{
+		qui: xtivreg log_`j'_`i' (log_adult_mort = prev_ebola_new_cases time) , fe vce(cluster countryname)
+		parmest, label list(parm label estimate min* max* p) saving(results_`j'_`i', replace)
+	}
+}
+
+append using results_exp_1 results_exp_2 results_exp_3 results_imp_1 results_imp_2 results_imp_3
+keep if parm == "log_adult_mort"
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\IRF_second_stage_1.dta", replace
+encode parm, generate(parm2)
+drop parm
+rename parm2 parm
+gen time_irf = _n
+label variable estimate "regression coefficient"
+gen imp = 1 if time_irf > 3
+recode imp .=0
+gen exp_2 = (estimate / -3.1352496) if imp ==0
+gen imp_2 = (estimate / .05520858) if imp ==1
+label variable min95 "lower 95% CI "
+gen min95_2 = (min95 / .01467932)
+label variable max95 " upper 95% CI"
+gen max95_2 = (max95 / .01467932)
+
+twoway (rarea min95 max95 time_irf, color(gs14)) ///
+(line estimate time_irf, mcolor(red) msymbol(square) msize(small)) ///
+if imp==0 , xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_second_exp_prev.png", as(png) replace
+
+twoway (rarea min95 max95 time_irf, color(gs14)) ///
+(line estimate time_irf, mcolor(red) msymbol(square) msize(small)) ///
+if imp==1 , xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_second_imp_prev.png", as(png) replace
+
+// IRF of TB
+
+foreach i in 1 2 3{
+	qui: xtivreg tb_in_mil_`i' (log_adult_mort = prev_ebola_new_cases time) , fe vce(cluster countryname)
+	parmest, label list(parm label estimate min* max* p) saving(results_`i', replace)
+}
+append using results_1 results_2 results_3
+keep if parm == "log_adult_mort"
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\IRF_second_stage_1.dta", replace
+encode parm, generate(parm2)
+drop parm
+rename parm2 parm
+gen time_irf = _n
+label variable estimate "regression coefficient"
+
+twoway (rarea min95 max95 time_irf, color(gs14)) ///
+(line estimate time_irf, mcolor(red) msymbol(square) msize(small)) ///
+, xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_second_tb_prev.png", as(png) replace
+
+*********************** IRF & Controls *****************************************
+
+use "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged", clear
+
+foreach i in imp exp{
+	rename log_`i' log_`i'_1
+	gen log_`i'_2 = log_`i'_1[_n-1]
+	gen log_`i'_3 = log_`i'_1[_n-2]
+}
+
+// IRF of IMP and EXP
+
+foreach j in imp exp{
+	foreach i in 1 2 3{
+		qui: xtivreg log_`j'_`i' (log_adult_mort = prev_ebola_new_cases time)  log_pop lag_lcap tariff, fe vce(cluster countryname)
+		parmest, label list(parm label estimate min* max* p) saving(results_`j'_`i', replace)
+	}
+}
+
+append using results_exp_1 results_exp_2 results_exp_3 results_imp_1 results_imp_2 results_imp_3
+keep if parm == "log_adult_mort"
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\IRF_second_stage_1.dta", replace
+encode parm, generate(parm2)
+drop parm
+rename parm2 parm
+gen time_irf = _n
+label variable estimate "regression coefficient"
+gen imp = 1 if time_irf > 3
+recode imp .=0
+
+twoway (rarea min95 max95 time_irf, color(gs14)) ///
+(line estimate time_irf, mcolor(red) msymbol(square) msize(small)) ///
+if imp==0 , xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_second_control_exp.png", as(png) replace
+
+twoway (rarea min95 max95 time_irf, color(gs14)) ///
+(line estimate time_irf, mcolor(red) msymbol(square) msize(small)) ///
+if imp==1 , xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_second_control_imp.png", as(png) replace
+
+
+//TB and controls
+
+use "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged", clear
+
+gen tb_in_mil = trade_balance / 1000000
+rename tb_in_mil tb_in_mil_1
+gen tb_in_mil_2 = tb_in_mil_1[_n-1]
+gen tb_in_mil_3 = tb_in_mil_1[_n-2]
+
+foreach i in 1 2 3{
+	qui: xtivreg tb_in_mil_`i' (log_adult_mort = prev_ebola_new_cases time) log_pop lag_lcap tariff, fe vce(cluster countryname)
+	parmest, label list(parm label estimate min* max* p) saving(results_`i', replace)
+}
+append using results_1 results_2 results_3
+keep if parm == "log_adult_mort"
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\IRF_second_stage_1.dta", replace
+encode parm, generate(parm2)
+drop parm
+rename parm2 parm
+gen time_irf = _n
+label variable estimate "regression coefficient"
+
+twoway (rarea min95 max95 time_irf, color(gs14)) ///
+(line estimate time_irf, mcolor(red) msymbol(square) msize(small)) ///
+, xlabel(, valuelabels angle(0) labsize(vsmall)) xtitle("")
+
+graph export "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Pics_graphs\IRF_second_control_tb.png", as(png) replace
+
+
+
+********************************************************************************
+******* Generate differenced second order moments for computation **************
+********************************************************************************
+
+drop *dif_*
+by id: gen dif_exp = (log_exp- log_exp[_n+1]) 
+by id: gen dif_imp = (log_imp- log_imp[_n+1])
+by id: gen dif_tb = (percent_trade_balance - percent_trade_balance[_n+1])/1000000
+xtsum dif_exp dif_imp dif_tb if year >= 2014 & countryname == "Liberia" |countryname == "Guinea"| countryname == "Sierra Leone"
+
+
+********************************************************************************
+******************** Collapse for first-stage robustness ***********************
+********************************************************************************
+
+rename log_mort_1 log_adult_mort
+collapse (mean) col_mort = log_adult_mort col_prev = prev_ebola_new_cases_percent col_articles =log_ebola_articles, by(countryname year)
+by countryname: gen time = _n
+sort time countryname
+by time: gen id = _n
+sort countryname time
+
+
+xtreg col_mort col_prev time, fe vce(cluster countryname)
+est store rob_b_1
+xtreg col_mort col_articles time, fe vce(cluster countryname)
+est store rob_b_2
+
+outreg2 [rob_b_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Collapsed_FS", ///
+tex(pretty) addtext(Country FE, Yes, Year FE, Yes) ctitle(Prevalence rate) adds(F-statistic, e(F), No. clusters, e(N_clust)) lab(proper) nocons seeout replace
+outreg2 [rob_b_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Collapsed_FS", ///
+tex(pretty) addtext(Country FE, Yes, Year FE, Yes) ctitle(Ebola Articles) adds(F-statistic, e(F), No. clusters, e(N_clust)) lab(proper) nocons seeout append
+
+********************************************************************************
+
