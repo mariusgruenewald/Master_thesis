@@ -1386,16 +1386,22 @@ Bootstrap by country-pair, unrestricted & 0.003 & [0.442, 1.857] & 0.003 & [0.00
 Overall, the bootstrap results seem to confirm the results of the cluster-robust variance matrix estimator. Therefore, we can now turn towards the second stage of the estimation.
 
 \subsection{Second Stage}
+
+After having established, a valid difference-in-difference set-up and relevance for the coefficient of interest beyond a reasonable scepticism, we can see how the estimated health coefficients influence trade outcomes. Namely, I will focus on exports, imports as well as trade balance.\\
+According to the theoretical simulation drawn out in section ???, we have clear expectations about the coefficient signs and an indication about economic as well as statistical relevance. For exports, we expect a negative sign and likely statistical significance. The same pattern is supposed to hold for the trade balance. Imports should follow a different pattern. While a negative sign on impact is expected, this should turn positive in the second post-shock period. In the first year after the shock, we expect still a negative sign but a smaller coefficient. Since the real data only cover the first three periods of the shock, we expect a negative sign. Studies including a larger time horizon are expected to find a positive sign for a contemporaneous regression. Given the generally smaller deviation from zero in the simulation, the effect might be undistinguishable from zero. Therefore, doubt about statistical significance are reasonable.
+
 \subsubsection{Baseline}
 
+I start to draw out the second stage by presenting the regression equation following an instrumental variable design.
 \begin{align}
-Y_{ijt} =  \beta \mathbf{H_{it}} +  Q_{it}'\gamma + \alpha_i + \gamma_t + \epsilon_{it}
+Y_{ijt} =  \beta \mathbf{H_{it}} +  X_{it}'\eta + \alpha_{ij} + \zeta_t + \epsilon_{it}
 \end{align}
 with 
 \begin{align}
-\mathbf{H_{it}} =  \beta Z_{it} +  Q_{it}'\gamma + \pi_{it} + \alpha_i + \gamma_t + \epsilon_{it}
+\mathbf{H_{it}} =  \beta Z_{it} +  Q_{it}'\nu + X_{it}'\eta + \pi_{it} + \alpha_i + \zeta_t + \epsilon_{it}
 \end{align}
-as estimated in the previous section.
+being equal to equation (22) of the previous section. $i$ indexes the country of origin and $j$ the corresponding trading partner. To fix ideas, $i$ can be any of the 40 countries of control or treatment group while $j$ is any country trading with $i$. $t$ indexes years. $Q_{it}'\nu$ represents the control variables of the first stage while $X_{it}'\eta$  represents those of the second stage. As in the previous regression, $\pi_{it}$ represents a country-pair-specific linear trend across time. $\alpha_{ij}$ accounts for country-pair specific fixed effects with $\zeta_t$ controlling for time fixed effects. \\
+An intuitive second stage result without any control variables, can be found in Table \ref{Second Stage Baseline}. While the first two columns use exports as the dependent variable, the middle columns use imports. The two columns on the right regress on the trade balance. All three variable are measured in constant 2010 Dollars. A natural logarithmic transformation to exports and imports has been applied in order to ease interpretation.
 
 \begin{table}[htbp] \centering
 \caption{Second Stage Baseline \label{Second Stage Baseline}}
@@ -1412,38 +1418,56 @@ Country-pairs & 6,365 & 6,365 & 6,076 & 6,076 & 7,232 & 7,232 \\
 Instrument & Prevalence & Articles & Prevalence & Articles & Prevalence & Articles \\
 FE & Yes & Yes & Yes & Yes & Yes & Yes \\
 F-statistic first stage & 34.64 & 47.49 & 41.77 & 58.36 & 39.81 & 52.08 \\
-No. clusters & 40 & 40 & 40 & 40 & 40 & 40 \\ \hline
+No. of clusters & 40 & 40 & 40 & 40 & 40 & 40 \\ \hline
 \multicolumn{7}{c}{\begin{footnotesize} Robust standard errors in parentheses\end{footnotesize}} \\
 \multicolumn{7}{c}{\begin{footnotesize} *** p$<$0.01, ** p$<$0.05, * p$<$0.1\end{footnotesize}} \\
 \end{tabular}
 }
 \end{table}
 
+When taking a look at exports, we find strong economic and statistical relevance of health as a determinant. We associate an increase in the mortality rate by one percent with an decrease in exports by about three percent. This is independent of the instrument used. Having three treated clusters is subject to them same concern voice in section ?????. The unrestricted as well as the restricted wild clustered bootstrap errors show highly significant results with 95\% confidence intervals between approximately -4.3 and -1.9 for both cases. That leaves us with good confidence in the economic and statistical relevance of health in determining exports.\footnote{More results can be obtained from the author}\\
+When we turn to imports, we find the unexpected, posititve sign.  Economically, an increase in mortality rates by one percent would be expected to yield an increase in imports by about 0.06\%. A t-statistic of about 1 in both specifications confirms our initial concerns regarding the relevance of health outcomes for import behaviour. \\
+With respect to incomes, the simple model prognosted a reduction in income due to the overall loss in output allowing less consumption and investment with in return implies less imports. These mechanism does not seem to be dominant. \\
+Agnostically surprising, the trade balance does not follow the trend of exports at all. On the contrary, the estimated sign is positive and the esimation fails reject to null of no statistical significance. The effect seems to be similar to the effect on imports, instead. The most intuitive answer to this would be that imports are greater in value terms than exports. The theoretical simulation is an exchange economy in contrast to the real economy where real prices matter. And indeed, the data exhibits an inequality as can be seen in Figure \ref{Export-Imports Scatter}.
+
+\begin{figure}[!ht]
+\begin{center}\caption{Export-Imports Scatter \label{Export-Imports Scatter}}
+\includegraphics[width=0.8\textwidth]{C:/Users/mariu/Documents/Master_Thesis/Master_thesis/Pics_graphs/Exports_imports_scatter.png}\\
+\end{center}
+\end{figure}
+
+Here, every blue dot represents a country-pair's value of exports and imports. The red line marks the 45 degree. If imports and exports were equal we would expect the cloud to be symmetric above and below the red line. However, the part below the red line seems swollen indicating imports being larger than exports for the employed sample. The green line shows a more thorough approach to answer the same question. It is a simple regression of imports on exports. Since the slope of the green line is smaller than of the red line, we can conclude that exports are less in size than imports for our sample. \\
+
+
+\subsubsection{Control variables}
+
+As already suggested by the semi-structural equation derived in section ???, control variables should be taken into account. Before including the variables as proposed by that equation, I consider only to include output. Since, as derived in section ???, the effect should work via production, we would expect any health effects on trade to diminish economically as statistically once output itself is included. \\  
+
 \begin{table}[htbp] \centering
-\caption{Second Stage Baseline robustness \label{Second Stage Baseline robustness}}
+\caption{Second Stage Output \label{Second Stage Output}}
 \resizebox{\textwidth}{!}{
-\begin{tabular}{lcccccccc} \hline
- & (1) & (2) & (3) & (4) & (5) & (6) & (7) & (8) \\
-VARIABLES & Exp & Exp & Imp & Imp & TB & TB & GDP p.c. & GDP p.c. \\ \hline
-\vspace{4pt} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} \\
-log\_adult\_mort & -0.0217* & -0.0218* & 0.0260* & 0.0268* & 0.0165 & 0.0167 & -0.890*** & -0.890*** \\
-\vspace{4pt} & \begin{footnotesize}(0.0124)\end{footnotesize} & \begin{footnotesize}(0.0124)\end{footnotesize} & \begin{footnotesize}(0.0145)\end{footnotesize} & \begin{footnotesize}(0.0149)\end{footnotesize} & \begin{footnotesize}(0.0138)\end{footnotesize} & \begin{footnotesize}(0.0139)\end{footnotesize} & \begin{footnotesize}(0.139)\end{footnotesize} & \begin{footnotesize}(0.139)\end{footnotesize} \\
-log\_gdp\_p\_c & -0.0115 & -0.0116 & 0.00264 & 0.00318 & 0.00620 & 0.00628 &  &  \\
- & \begin{footnotesize}(0.00845)\end{footnotesize} & \begin{footnotesize}(0.00848)\end{footnotesize} & \begin{footnotesize}(0.00611)\end{footnotesize} & \begin{footnotesize}(0.00627)\end{footnotesize} & \begin{footnotesize}(0.00895)\end{footnotesize} & \begin{footnotesize}(0.00900)\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} \\
-\vspace{4pt} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} \\ \hline
-\vspace{4pt} Instrument & Prevalence & Articles & Prevalence & Articles & Prevalence & Articles & Prevalence & Articles \\ \hline
-Observations & 57,261 & 57,261 & 63,537 & 63,537 & 83,428 & 83,428 & 121,852 & 121,852 \\
-Number of id & 6,311 & 6,311 & 6,005 & 6,005 & 7,164 & 7,164 & 7,228 & 7,228 \\
-FE & Yes & Yes & Yes & Yes & Yes & Yes & Yes & Yes \\
-F-stat first stage & 499.5 & 499.5 & 499.5 & 499.5 & 499.5 & 499.5 & 499.5 & 499.5 \\
-No. clusters & 39 & 39 & 39 & 39 & 39 & 39 & 39 & 39 \\ \hline
-\multicolumn{9}{c}{\begin{footnotesize} Robust standard errors in parentheses\end{footnotesize}} \\
-\multicolumn{9}{c}{\begin{footnotesize} *** p$<$0.01, ** p$<$0.05, * p$<$0.1\end{footnotesize}} \\
+\begin{tabular}{lcccc} \hline
+ & (1) & (2) & (3) & (4) \\
+VARIABLES & Exports & Imports & Trade Balance & GDP \\ \hline
+\vspace{4pt} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} \\
+log\_adult\_mort & -2.443** & 0.00545 & 47.64** & -0.893*** \\
+\vspace{4pt} & \begin{footnotesize}(1.210)\end{footnotesize} & \begin{footnotesize}(0.0675)\end{footnotesize} & \begin{footnotesize}(22.70)\end{footnotesize} & \begin{footnotesize}(0.140)\end{footnotesize} \\
+log\_gdp\_p\_c & 0.849 & -0.0541 & 37.61 &  \\
+ & \begin{footnotesize}(0.836)\end{footnotesize} & \begin{footnotesize}(0.0650)\end{footnotesize} & \begin{footnotesize}(44.07)\end{footnotesize} & \begin{footnotesize}\end{footnotesize} \\
+\vspace{4pt} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} & \begin{footnotesize}\end{footnotesize} \\
+Observations & 56,188 & 62,350 & 81,872 & 119,421 \\
+Number of id & 6,184 & 5,893 & 7,022 & 7,085 \\
+Instrument & Prevalence & Prevalence & Prevalence & Prevalence \\
+FE & Yes & Yes & Yes & Yes \\
+F-statistic first stage & 493.4 & 493.4 & 493.4 & 493.4 \\
+ No. of clusters & 38 & 38 & 38 & 38 \\ \hline
+\multicolumn{5}{c}{\begin{footnotesize} Robust standard errors in parentheses\end{footnotesize}} \\
+\multicolumn{5}{c}{\begin{footnotesize} *** p$<$0.01, ** p$<$0.05, * p$<$0.1\end{footnotesize}} \\
 \end{tabular}
 }
 \end{table}
+Table \ref{Second Stage Output} shows these predictions are only partially correct. Indeed, coefficients as well as t-statistics are closer to zero in comparison to Table \ref{Second Stage Baseline}. That indicates that a significant share of the overall works via the production. For exports, the estimated share of production of the overall effect is approximately 24\%. With regards to imports, 90\% of the estimated coefficient in Table \ref{Second Stage Baseline} are dropped. Given that the original estimate was already statistically not significant, a cautious interpretation is needed. Albeit, it poses a intruiging argument for the relevance of production on importing behaviour. 
 
-\subsubsection{Control variables}
 
 \begin{table}[htbp] \centering
 \caption{Second Stage Control Variables \label{Second Stage Control Variables}}
@@ -1569,7 +1593,139 @@ F-statistic first stage & 13.28 & 13.28 & 13.28 \\
 \end{center}
 \end{figure}
 
+\newsavebox\myv
+\begin{lrbox}{\myv}\begin{minipage}{\textwidth}
+\begin{verbatim}
+%----------------------------------------------------------------
+% 1. Defining variables
+%----------------------------------------------------------------
 
+
+% 19 variables
+var c1 c2 k1 k2 a1 a2 lab1 lab2 y1 y2 inv1 inv2 tb1 tb2 imp1 imp2 d1 d2 h tb1_y tb2_y;
+
+% Declaring exogenous shock variables
+varexo cp e2;
+
+% Defining parameters
+parameters gamma delta alpha beta rhoH rhoN rhoA r;
+
+% Assigning values to parameters
+% FIND SOURCES FOR VALUES
+gamma=2;
+delta=.05;
+alpha=.32;
+beta= 0.98;
+rhoA= 0.42;
+rhoN = 0.04;
+// in-sample population autocorrelation
+r = 0.04;
+rhoH = 0.92;
+// 0.92 as being the autocorrelation in health data for my sample
+
+\end{verbatim}
+\end{minipage}\end{lrbox}
+\resizebox{0.95\textwidth}{!}{\usebox\myv}
+
+\begin{lrbox}{\myv}\begin{minipage}{\textwidth}
+\begin{verbatim}
+
+%--------------------------------------------------------------------------
+% 2.     Writing the characterizing equations  
+%--------------------------------------------------------------------------
+
+
+model;
+// Households
+exp(c2)+exp(k2)-exp(k2(-1))*(1-delta) + exp(d2) = exp(a2)*exp(lab2)^(1-alpha)*exp(k2(-1))^alpha + (1+r)* exp(d2(-1));
+exp(c1)^(-gamma) = beta*exp(c1(+1))^(-gamma)*(alpha*exp(a1(+1))*exp(k1)^(alpha-1)*exp(lab1(+1))^(1-alpha) +1-delta);
+exp(c2)^(-gamma) = beta*exp(c2(+1))^(-gamma)*(alpha*exp(a2(+1))*exp(k2)^(alpha-1)*exp(lab2(+1))^(1-alpha) +1-delta);
+exp(c1)+exp(k1)-exp(k1(-1))*(1-delta) + exp(d1) = exp(a1)*exp(lab1)^(1-alpha)*exp(k1(-1))^alpha + (1+r)* exp(d1(-1));
+exp(c1)^(-gamma) = beta * (1+r) * exp(c1(+1))^(-gamma);
+exp(c2)^(-gamma) = beta * (1+r) * exp(c2(+1))^(-gamma);
+
+// Stochastic processes
+a1=rhoA*a1(-1)+h;
+a2=rhoA*a2(-1)-e2;
+lab1 = rhoN * lab1(-1) + h;
+lab2 = rhoN * lab2(-1) - e2;
+
+// Production
+y1 = exp(a1) * exp(lab1)^(1-alpha) * exp(k1(-1))^(alpha);
+y2 = exp(a2) * exp(lab2)^(1-alpha) * exp(k2(-1))^(alpha);
+
+// Miscalleneous
+inv1 = k1(+1) - (1-delta)*k1;
+inv2 = k2(+1) - (1-delta)*k2;
+tb1 = y1 - c1 - inv1;
+tb2 = y2 - c2 - inv2;
+imp1 = c1 + inv1;
+imp2 = c2 + inv2;
+h = rhoH * h(-1) - cp;
+tb1_y = tb1 / y1;
+tb2_y = tb2 / y2;
+end;
+
+\end{verbatim}
+\end{minipage}\end{lrbox}
+\resizebox{0.75\textwidth}{!}{\usebox\myv}
+
+
+\begin{lrbox}{\myv}\begin{minipage}{\textwidth}
+\begin{verbatim}
+%--------------------------------------------------------------------------
+% 3.      Initialize values (to avoid "no steady-state" solution)
+%--------------------------------------------------------------------------
+
+
+initval;
+k1=2.8;
+k2=2.8;
+c1=.8;
+c2=.8;
+lab1 = .3;
+lab2 = .3;
+inv1 = 0.6;
+inv2 = 0.6;
+y1 = 1;
+y2 = 1;
+a1=0;
+a2=0;
+h=1;
+e2=0;
+cp=0.00;
+end;
+
+\end{verbatim}
+\end{minipage}\end{lrbox}
+\resizebox{0.95\textwidth}{!}{\usebox\myv}
+
+\begin{lrbox}{\myv}\begin{minipage}{\textwidth}
+\begin{verbatim}
+%--------------------------------------------------------------------------
+% 4.        Defining the shock
+%--------------------------------------------------------------------------
+
+
+shocks;
+var cp;
+stderr .024;
+/* 0.024 is the standard deviation of the case prevalence (in percent)
+in the 2014 Ebola outbreak */
+end;
+
+%--------------------------------------------------------------------------
+% 5.      Declare to solve for steady-state and simulation details
+%--------------------------------------------------------------------------
+
+steady;
+stoch_simul(dr_algo=0, order =1, hp_filter = 6.25, periods=1000, irf = 80)y1 imp1 tb1_y;
+stoch_simul(dr_algo=0, order =1, hp_filter = 6.25, periods=1000, irf = 80)c1 k1 a1 lab1 inv1 d1 h;
+stoch_simul(dr_algo=0, order =1, hp_filter = 6.25, periods=1000, irf = 80)k2 y2 inv2 imp2 tb2_y;
+
+\end{verbatim}
+\end{minipage}\end{lrbox}
+\resizebox{0.85\textwidth}{!}{\usebox\myv}
 
 
 
