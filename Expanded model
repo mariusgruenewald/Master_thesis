@@ -1,0 +1,134 @@
+var h, z_1,z_2,y_1,y_2,k_1, n_1, n_2, k_2, x_1, x_2, c_1, c_2, a_1, a_2, b_1, b_2,nx_1,nx_2,ir_1,ir_2,rx_1,rx_2,p_1,p_2, r_1,r_2,qa_1,qa_2,qb_1,qb_2,lambda_1,lambda_2,f_1,f_2;
+varexo cp, eps_2;
+
+parameters beta, mu, gamma, theta, delta, rho, omega, A_1, rhoN, rhoH;
+
+beta = 0.99;
+mu   = 0.34;
+gamma = -1;
+theta =0.36;
+delta = 0.025;
+rho = -1/9;
+omega = 0.85;
+A_1 =0.42;
+rhoN = 0.04;
+rhoH = 0.92;
+
+model;
+//shock
+z_1 = A_1 * z_1(-1) + h;
+z_2 = A_1 * z_1(-1) -eps_2;
+n_1 = rhoN * n_1(-1) + h;
+n_2 = rhoN * n_2(-1) - eps_2;
+h = rhoH * h(-1) - cp;
+
+//output
+f_1=exp(z_1)*k_1(-1)^theta*exp(n_1)^(1-theta);
+f_2=exp(z_2)*k_2(-1)^theta*exp(n_2)^(1-theta);
+
+//feasibale constraint
+x_1+c_1= (omega*a_1^rho+(1-omega)*b_1^rho)^(1/rho);
+x_2+c_2= ((1-omega)*a_2^rho+omega*b_2^rho)^(1/rho);
+
+// capital formation
+k_1 = x_1+(1-delta)*k_1(-1);
+k_2 = x_2+(1-delta)*k_2(-1);
+
+// intermediate good
+a_1+ a_2 = f_1;
+b_1+ b_2 = f_2;
+
+// Lagragian
+lambda_1 = (c_1)^gamma /c_1;
+lambda_2 = c_2^gamma /c_2;
+
+// interest rate in price of intermediate good
+r_1 =  theta*f_1/k_1(-1);
+r_2 =  theta*f_2/k_2(-1);
+
+// intermediate good pricing
+qa_1 = omega*a_1^(rho-1)*((omega*a_1^rho+(1-omega)*b_1^rho)^(1/rho-1));
+qb_1 = (1-omega)*b_1^(rho-1)* ((omega*a_1^rho+(1-omega)*b_1^rho)^(1/rho-1));
+qa_2 = (1-omega)*a_2^(rho-1)*(((1-omega)*a_2^rho+omega*b_2^rho)^(1/rho-1));
+qb_2 = omega*b_2^(rho-1)*(((1-omega)*a_2^rho+omega*b_2^rho)^(1/rho-1));
+
+//foc to capital
+beta*lambda_1(1)*(qa_1(1) * r_1(1)+1-delta)=lambda_1;
+beta*lambda_2(1)*(qb_2(1) * r_2(1)+1-delta)=lambda_2;
+
+//foc to a_1
+lambda_1* qa_1 =lambda_2* qa_2;
+
+//foc to b_1
+lambda_1* qb_1= lambda_2* qb_2;
+
+// gdp    
+y_1=qa_1*f_1;
+y_2=qb_2*f_2;
+
+//net export ratio
+nx_1=(qa_1*a_2-qb_1*b_1)/y_1;
+nx_2=(qb_2*b_1-qa_2*a_2)/y_2;
+
+//import ratio
+a_1*ir_1=b_1;
+b_2*ir_2=a_2;
+
+//terms of trade
+qa_1*p_1=qb_1;
+qb_2*p_2=qa_2;
+
+//real exchange rate
+rx_1*qa_2=qa_1;
+rx_2*qa_1=qa_2;
+end;
+
+initval;
+h=1;
+k_1=5.84336;
+k_2=5.84336;
+x_1=0.146084;
+x_2=0.146084;
+c_1=0.42366;
+c_2=0.42366;
+n_1=0.307182;
+n_2=0.307182;
+f_1=0.887017;
+f_2=0.887017;
+y_1=0.569744;
+y_2=0.569744;
+rx_1=1;
+rx_2=1;
+ir_1=0.209896;
+ir_2=0.209896;
+p_1=1;
+p_2=1;
+nx_1=1.39e-09;
+nx_2=-3.30e-10;
+cp=0;
+z_1=0;
+z_2=0;
+a_1=0.733135;
+a_2=0.153882;
+b_1=0.153882;
+b_2=0.733135;
+r_1 =  0.0546477;
+r_2 =  0.0546477;
+qa_1 = 0.642314;
+qb_1 = 0.642314;
+qa_2 = 0.642314;
+qb_2 = 0.642314;
+lambda_1 = 1.3692;
+lambda_2 = 1.3692;
+end;
+
+
+steady;
+check;
+
+shocks;
+var cp=.024;
+
+end;
+
+stoch_simul(dr_algo=0, order =1, hp_filter = 6.25, periods=1000, irf = 80,graph_format = eps);
