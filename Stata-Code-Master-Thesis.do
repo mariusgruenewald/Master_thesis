@@ -1194,9 +1194,38 @@ gen tb_in_mil = trade_balance / 1000000
 
 // Starting with exports
 xtivreg log_exp (log_adult_mort = prev_ebola_new_cases time), fe vce(cluster countryname) first
+boottest log_adult_mort, reps(999) nonull bootcluster(countryname)
+boottest log_adult_mort, reps(999) bootcluster(countryname)
 est store exp_1
+
 xtivreg log_exp (log_adult_mort = log_ebola_articles time), fe vce(cluster countryname) first
 est store exp_2
+
+
+***********************************
+//* A robustness reg. *//
+
+xtivreg log_exp (log_adult_mort = prev_ebola_new_cases time) log_gdp_p_c, fe vce(cluster countryname) first
+est store second_gdp_1
+xtivreg log_imp (log_adult_mort = prev_ebola_new_cases time) log_gdp_p_c, fe vce(cluster countryname) first
+est store second_gdp_2
+xtivreg tb_in_mil (log_adult_mort = prev_ebola_new_cases time) log_gdp_p_c, fe vce(cluster countryname) first
+est store second_gdp_3
+xtivreg log_gdp_p_c (log_adult_mort = prev_ebola_new_cases time), fe vce(cluster countryname) first
+est store second_gdp_4
+outreg2 [second_gdp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_wgdp", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Exports) adds(F-statistic first stage, e(F_f), No. of clusters, e(N_clust)) lab(proper) nocons seeout replace
+outreg2 [second_gdp_2] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_wgdp", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Imports) adds(F-statistic first stage, e(F_f), No. of clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [second_gdp_3] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_wgdp", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Trade Balance) adds(F-statistic first stage, e(F_f), No. of clusters, e(N_clust)) lab(proper) nocons seeout append
+outreg2 [second_gdp_4] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_wgdp", ///
+tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(GDP) adds(F-statistic first stage, e(F_f), No. of clusters, e(N_clust)) lab(proper) nocons seeout append
+
+
+//* End of robustness reg. *//
+***********************************
+
 
 xtivreg percent_exports (log_adult_mort = prev_ebola_new_cases time) log_gdp_p_c, fe vce(cluster countryname) first
 est store exp_rob_1
@@ -1301,6 +1330,24 @@ gen log_imp = log(imports)
 gen tb_in_mil = trade_balance/1000000
 save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged", replace
 
+import excel "C:\Users\mariu\Downloads\Data_Extract_From_World_Development_Indicators (8).xlsx", sheet("Data") firstrow clear
+rename CountryName countryname
+drop if  countryname == ""
+replace countryname = "CÃ´te d'Ivoire" if strpos(countryname, "Cote d'Ivoire") != 0
+replace countryname = "Congo" if strpos(countryname, "Congo, Rep.") != 0 & strpos(countryname, "Dem.") == 0
+replace countryname = "Democratic Republic of the Congo" if strpos(countryname, "Congo, Dem. Rep.") != 0
+replace countryname = "Gambia" if strpos(countryname, "Gambia, The") != 0
+encode Time, gen(year)
+sort countryname year
+by countryname: gen time = _n
+rename ExternaldebtstockstotalDOD ext_debt
+gen debt = real(ext_debt)
+gen log_debt = log(debt)
+merge 1:m countryname time using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged.dta"
+drop if _merge != 3
+drop _merge
+save "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Trade_merged", replace
+
 xtset id year
 
 ********************************************************************************
@@ -1310,6 +1357,7 @@ xtset id year
 // Starting with exports
 xtivreg2 log_exp (log_adult_mort = prev_ebola_new_cases time) log_pop lag_lcap tariff, fe cluster(countryname) first
 est store cont_exp_1
+
 xtivreg2 log_exp (log_adult_mort = log_ebola_articles time) log_pop lag_lcap tariff, fe cluster(countryname) first
 est store cont_exp_2
 
@@ -1345,32 +1393,32 @@ tex(pretty) addtext(Instrument, Articles, FE, Yes) ctitle(Trade Balance) adds(F-
 ********************************************************************************
 
 xtivreg log_exp (log_adult_mort = prev_ebola_new_cases prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
-log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban log_debt, fe vce(cluster countryname) first
 est store all_exp_1
 xtivreg percent_exports (log_adult_mort = log_ebola_articles prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
-log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban log_debt, fe vce(cluster countryname) first
 est store cont_exp_2
 
 // Imports next
 xtivreg log_imp (log_adult_mort = prev_ebola_new_cases prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
-log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban log_debt, fe vce(cluster countryname) first
 est store all_imp_1
 xtivreg percent_imports (log_adult_mort = prev_ebola_new_cases prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
-log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban log_debt, fe vce(cluster countryname) first
 est store cont_imp_2
 
 // Trade Balance
 xtivreg tb_in_mil (log_adult_mort = prev_ebola_new_cases prev_HIV tuberculosis_cases log_anemia log_health time) log_pop lag_lcap tariff ///
-log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban, fe vce(cluster countryname) first
+log_gdp_p_c gdp_p_c_growth log_fatalities percent_internet percent_urban log_debt, fe vce(cluster countryname) first
 est store all_tb_1
-xtivreg tb_in_mil (log_adult_mort = log_ebola_articles time) log_pop lag_lcap tariff, fe cluster(countryname) first
+xtivreg tb_in_mil (log_adult_mort = log_ebola_articles time) log_pop lag_lcap tariff, fe vce(cluster countryname) first
 est store cont_tb_2
 
-outreg2 [all_exp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+outreg2 [all_exp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_complete", ///
 tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Exports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout replace
-outreg2 [all_imp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+outreg2 [all_imp_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_complete", ///
 tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Imports) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
-outreg2 [all_tb_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_theory", ///
+outreg2 [all_tb_1] using "C:\Users\mariu\Documents\Master_Thesis\Master_thesis\Second_stage_complete", ///
 tex(pretty) addtext(Instrument, Prevalence, FE, Yes) ctitle(Trade Balance) adds(F-statistic first stage, e(F_f), No. clusters, e(N_clust)) lab(proper) nocons seeout append
 
 
