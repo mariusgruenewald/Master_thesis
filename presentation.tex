@@ -67,8 +67,8 @@ On the consequences of health on trade}
 \begin{frame}{An interesting topic...}
 \begin{figure}[!ht]
 \begin{center}\caption{Exports and Health \label{Exports and Health}}
-\includegraphics[width=0.6\textwidth]{C:/Users/mariu/Documents/Master_Thesis/Master_thesis/Pics_graphs/Trade_Health_World.png} \\
-\smallskip {\footnotesize Figure \ref{Exports and Health} shows time trends of the crude death rate of the world (red)\\ and the aggregated world exports (blue).\\ The left scale measures the crude death rate per 1000, \\ while the right scale total exports in 2010 dollars. Both are measure are annual.}
+\includegraphics[width = 0.8\textwidth]{C:/Users/mariu/Documents/Master_Thesis/Master_thesis/Pics_graphs/Trade_Health_World.png} \\
+\smallskip {\footnotesize Figure \ref{Exports and Health} shows time trends of the crude death rate of the world (red)\\ and the aggregated world exports (blue).}
 \end{center}
 \end{figure}
 \end{frame}
@@ -78,24 +78,13 @@ On the consequences of health on trade}
 
 
 \begin{frame}{The Environment}
-The intermediate producers
-\begin{align}
-a_t + a_t^* = A_t N_t^{1-\alpha} K_{t-1}^{\alpha} \\
-b_t^* + b_t = A_t^* N_t^{*^{ 1-\alpha}} K_{t-1}^{*^{\alpha}}
-\end{align}
-The final producers
-\begin{align}
-(\omega a_t^{\frac{\theta -1}{\theta}} + (1-\omega) b_t^{\frac{\theta -1}{\theta}})^{\frac{\theta}{\theta-1}} \\
-((1-\omega) a_t^{*^{^\frac{\theta -1}{\theta}}} + \omega b_t^{*^{\frac{\theta -1}{\theta}}})^{\frac{\theta}{\theta-1}}
-\end{align}
-The resource constraints
-\begin{align}
-K_t - (1-\delta)K_{t-1} + C_t = (\omega a_t^{\frac{\theta-1}{\theta}} + (1-\omega) b_t^{\frac{\theta-1}{\theta}})^{\frac{\theta}{\theta-1}} \\
-K_t^* - (1-\delta)K_{t-1}^* + C^*_t= ((1-\omega) a_t^{*^{\frac{\theta-1}{\theta}}} + \omega b_t^{*^{\frac{\theta-1}{\theta}}})^{\frac{\theta}{\theta-1}}
-\end{align}
-\end{frame}
 
-\begin{frame}{Decentralized Solution}
+Overall,
+\begin{itemize}
+\item International RBC Model \\ 
+\item 2 countries, 2 goods \\
+\end{itemize}
+
 Shocks occur to health
 \begin{align}
 H_{t} = \rho^H H_{t-1} + \epsilon_{t-1} \\ \text{which enters via}& \nonumber \\
@@ -103,41 +92,54 @@ H_{t} = \rho^H H_{t-1} + \epsilon_{t-1} \\ \text{which enters via}& \nonumber \\
 \text{ln } N_{t} = \rho^N \text{ln } N_{t-1} + H_{t}
 \end{align}
 
-Further note, the real exchange rate for the home country
-\begin{align}
-rer_t = \frac{qa_t}{qa_t^*}
-\end{align}
-and the home country's trade balance
-\begin{align}
-nx_t = q_{a,t} a_t^* - q_{b,t} b_t 
-\end{align}
-
-
 \end{frame}
 
 \begin{frame}{Simulation}
 \begin{figure}[!ht]
 \begin{center} 
 \begin{minipage}[t]{\textwidth}
-\includegraphics[width=1\textwidth]{C:/Users/mariu/Documents/Master_Thesis/Master_thesis/Pics_graphs/Simulation_expanded_1.png}\\
+\includegraphics[width=1\textwidth]{C:/Users/mariu/Documents/Master_Thesis/Master_thesis/Pics_graphs/presentation_irf.png}\\
 \caption{Simulation.\label{Simulation Evidence}}
 \end{minipage}
 \end{center}
 \end{figure}
 \end{frame}
 
+\section{Estimation Strategy}
+
+\begin{frame}{Estimation Strategy}
+When simply regressing health on trade outcomes, estimates are likely to be biased.  \\ \vspace{0.5cm}
+Therefore, I instrument health with a difference-in-differences study of the 2014 Ebola outbreak.
+
+\begin{align}
+Y_{ijt} =  \beta \mathbf{H_{it}} +  X_{ijt}'\eta + \alpha_{ij} + \zeta_t + \epsilon_{ijt}
+\end{align}
+with 
+\begin{align}
+\mathbf{H_{it}} =  \beta Z_{it} +  Q_{it}'\nu + X_{it}'\eta + \pi_{it} + \alpha_i + \zeta_t + \epsilon_{it}
+\end{align}
+
+\end{frame}
+
+
 
 \section{Data}
 
 \begin{frame}{Measuring Ebola}
 
-Overall sample properties 
+The 2014 Ebola Outbreak
 \begin{itemize}
-\item Covers 40 countries in Sub-Saharan Africa
+\item Guinea, Liberia and Sierra-Leone
+\item In the years 2014 and 2015
+\end{itemize}
+
+The sample
+\begin{itemize}
+\item 37 control countries + 3 treatment countries
 \item For the years 2000 until 2016
 \end{itemize}
 
-I consider two main measures
+Two main measures
 \begin{itemize}
 \item Case Prevalence Rate
 \item Ebola Articles in NYT
@@ -152,26 +154,10 @@ I consider two main measures
 
 \item Health is measured in adult, age-adjusted mortality rates from the \textit{World Bank Development Indicators}.
 
-\item Measures of trade include the logarithms of exports and imports as well as the trade balance (in \% of GDP). Data is taken from \textit{IMF Directions of Trade} dataset
+\item Measures of trade include the logarithms of exports and imports as well as the trade balance (in \% of GDP). Measured in country-pairs.
+Data is taken from \textit{IMF Directions of Trade} dataset
 
 \end{itemize}
-
-\end{frame}
-
-
-\section{Estimation Strategy}
-
-\begin{frame}{Estimation Strategy}
-In essence, my estimation strategy relies on a difference-in-differences to receive predicted mortality rates. \\
-The (exogenous), predicted mortality rates work as an instrument for health to identify a causal mechanism of health on trade. \\
-\begin{align}
-Y_{ijt} =  \beta \mathbf{H_{it}} +  X_{ijt}'\eta + \alpha_{ij} + \zeta_t + \epsilon_{ijt}
-\end{align}
-with 
-\begin{align}
-\mathbf{H_{it}} =  \beta Z_{it} +  Q_{it}'\nu + X_{it}'\eta + \pi_{it} + \alpha_i + \zeta_t + \epsilon_{it}
-\end{align}
-
 
 \end{frame}
 
@@ -179,7 +165,10 @@ with
 
 \subsection{First Stage}
 
-\begin{frame}
+\begin{frame}{Was the 2014 outbreak truly random?}
+
+Anecdotal evidence suggests so, but a more thorough statistical investigation is needed.
+
 \begin{figure}[!ht]
 \begin{center}
 \begin{minipage}[t]{\textwidth}
@@ -228,27 +217,7 @@ F-statistic & 39.60 & 69.58 \\ \hline
 \end{frame}
 
 
-\begin{frame}{Clustered Standard Errors}
-\begin{table}[htbp] \centering
-\caption{Wild cluster bootstrap \label{Wild cluster bootstrap}}
-\resizebox{\textwidth}{!}{
-\begin{tabular}{lcccc} \hline
- & \multicolumn{2}{c}{(I)} & \multicolumn{2}{c}{(II)}  \\ \vspace{3pt}
-Treatment group & \multicolumn{2}{c}{Three countries} & \multicolumn{2}{c}{Three countries}  \\ \vspace{3pt}
-Treatment variable & \multicolumn{2}{c}{Case prevalence} & \multicolumn{2}{c}{Ebola articles} \\ \vspace{3pt}
-Estimate & \multicolumn{2}{c}{0.9716} & \multicolumn{2}{c}{0.02} \\ \vspace{3pt}
-Cluster robust s.e. & \multicolumn{2}{c}{0.3169} & \multicolumn{2}{c}{0.004} \\ \vspace{3pt}
-t-statistic & \multicolumn{2}{c}{3.07} & \multicolumn{2}{c}{5.21} \\ \hline \vspace{3pt}
-\vspace{3pt} P-values \& CI & P value & CI & P value & CI \\ \vspace{3pt}
-Initial results & 0.004  & [0.331, 1.613] & 0.000  & [0.012, 0.028]\\ \vspace{3pt}
-Bootstrap by country, restricted & 0.105 & [-631.6, 24.2] & 0.1054 &  [-.1698, .2974] \\ \vspace{3pt}
-Bootstrap by country, unrestricted & 0.28& [-.461, 2.404] & 0.0000 & [.01224, .02828]  \\ \vspace{3pt}
-Bootstrap by country-pair, restricted & 0.0856 & [-1.649, 5.502] & 0.009 & [.009949, .03193] \\ \vspace{3pt}
-Bootstrap by country-pair, unrestricted & 0.1381 & [-.5862, 2.529] & 0.000 & [0.012, 0.028] \\ \hline \vspace{3pt}
-\end{tabular}
-}
-\end{table}
-\end{frame}
+
 
 \subsection{Second Stage}
 
@@ -297,6 +266,28 @@ Cluster & &\multicolumn{2}{c}{Country pair} \\ \hline
 \end{minipage}
 \end{center}
 \end{figure}
+\end{frame}
+
+\begin{frame}{Clustered Standard Errors}
+\begin{table}[htbp] \centering
+\caption{Wild cluster bootstrap \label{Wild cluster bootstrap}}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lcccc} \hline
+ & \multicolumn{2}{c}{(I)} & \multicolumn{2}{c}{(II)}  \\ \vspace{3pt}
+Treatment group & \multicolumn{2}{c}{Three countries} & \multicolumn{2}{c}{Three countries}  \\ \vspace{3pt}
+Treatment variable & \multicolumn{2}{c}{Case prevalence} & \multicolumn{2}{c}{Ebola articles} \\ \vspace{3pt}
+Estimate & \multicolumn{2}{c}{0.9716} & \multicolumn{2}{c}{0.02} \\ \vspace{3pt}
+Cluster robust s.e. & \multicolumn{2}{c}{0.3169} & \multicolumn{2}{c}{0.004} \\ \vspace{3pt}
+t-statistic & \multicolumn{2}{c}{3.07} & \multicolumn{2}{c}{5.21} \\ \hline \vspace{3pt}
+\vspace{3pt} P-values \& CI & P value & CI & P value & CI \\ \vspace{3pt}
+Initial results & 0.004  & [0.331, 1.613] & 0.000  & [0.012, 0.028]\\ \vspace{3pt}
+Bootstrap by country, restricted & 0.105 & [-631.6, 24.2] & 0.1054 &  [-.1698, .2974] \\ \vspace{3pt}
+Bootstrap by country, unrestricted & 0.28& [-.461, 2.404] & 0.0000 & [.01224, .02828]  \\ \vspace{3pt}
+Bootstrap by country-pair, restricted & 0.0856 & [-1.649, 5.502] & 0.009 & [.009949, .03193] \\ \vspace{3pt}
+Bootstrap by country-pair, unrestricted & 0.1381 & [-.5862, 2.529] & 0.000 & [0.012, 0.028] \\ \hline \vspace{3pt}
+\end{tabular}
+}
+\end{table}
 \end{frame}
 
 \section{Conclusion}
